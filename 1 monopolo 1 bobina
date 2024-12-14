@@ -1,0 +1,96 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+
+# Constantes
+mu_0 = 4 * np.pi * 1e-7  # Permeabilidad magnética del vacío (H/m)
+q_m = 1e-6  # Carga magnética teórica del monopolo (en unidades arbitrarias)
+R_bobina = 0.05  # Radio de la bobina (m)
+N = 100  # Número de espiras de la bobina
+R_resistencia = 1.0  # Resistencia de la bobina (ohm)
+
+# Configuración del tiempo
+t_final = 5.0  # Tiempo total de la simulación (s)
+dt = 1e-4  # Paso de tiempo (s)
+t = np.arange(0, t_final, dt)  # Vector de tiempo
+
+# Posición inicial y final del monopolo
+x_start = -0.1  # Posición inicial en el eje x (m)
+x_end = 0.1  # Posición final en el eje x (m)
+v = (x_end - x_start) / t_final  # Velocidad del monopolo para recorrer de x_start a x_end en t_final
+x_m = x_start + v * t  # Posición del monopolo en el tiempo
+
+# Función para calcular el flujo magnético
+# Aproximación: flujo a través de un área circular centrada en el monopolo
+def flujo_magnetico(x_m, R_bobina, N):
+    # Campo magnético en el centro de cada espira
+    B = mu_0 * q_m / (4 * np.pi * (x_m**2 + R_bobina**2)**1.5)
+    # Área de cada espira
+    A = np.pi * R_bobina**2
+    # Flujo total
+    return N * B * A
+
+# Calcular el flujo magnético en cada instante
+phi_B = flujo_magnetico(x_m, R_bobina, N)
+
+# Calcular la fem inducida usando la derivada del flujo
+fem = -np.gradient(phi_B, dt)  # Ley de Faraday
+
+# Calcular la corriente inducida (I = fem / R)
+corriente = fem / R_resistencia
+
+# Graficar resultados
+plt.figure(figsize=(12, 6))
+
+# Flujo magnético
+plt.subplot(3, 1, 1)
+plt.plot(t, phi_B, label='Flujo magnético ($\Phi_B$)', color='blue')
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Flujo magnético (Wb)')
+plt.grid()
+plt.legend()
+
+# FEM inducida
+plt.subplot(3, 1, 2)
+plt.plot(t, fem, label='FEM inducida ($\mathcal{E}$)', color='orange')
+plt.xlabel('Tiempo (s)')
+plt.ylabel('FEM (V)')
+plt.grid()
+plt.legend()
+
+# Corriente inducida
+plt.subplot(3, 1, 3)
+plt.plot(t, corriente, label='Corriente inducida ($I$)', color='green')
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Corriente (A)')
+plt.grid()
+plt.legend()
+
+plt.tight_layout()
+plt.show()
+
+# Crear una animación del monopolo moviéndose a través de la bobina
+fig, ax = plt.subplots(figsize=(8, 6))
+
+# Dibujar la bobina
+circle = plt.Circle((0, 0), R_bobina, color='blue', fill=False, label='Bobina')
+ax.add_artist(circle)
+
+# Configuración inicial del gráfico
+monopolo, = ax.plot([], [], 'ro', markersize=10, label='Monopolo magnético')
+ax.set_xlim(-0.2, 0.2)
+ax.set_ylim(-0.1, 0.1)
+ax.set_aspect('equal', adjustable='datalim')
+ax.set_xlabel('Eje X (m)')
+ax.set_ylabel('Eje Y (m)')
+ax.legend()
+ax.grid()
+
+def init():
+    monopolo.set_data([], [])
+    return monopolo,
+
+def update(frame):
+    monopolo.set_data(x_m[frame], 0)  # Movimiento a lo largo del eje X
+    return monopolo,
+
